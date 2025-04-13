@@ -92,7 +92,7 @@ def build_prompt_with_logs(logs):
         return ""
 
 # Send prompt to Ollama using the ollama package
-async def send_prompt_to_ollama(prompt, model="llama3.2", temperature=1.0):
+async def send_prompt_to_ollama(prompt, model="tinyllama", temperature=1.0):
     try:
         # Using the synchronous generate with asyncio.to_thread
         response = await asyncio.to_thread(
@@ -138,7 +138,7 @@ async def send_discord_message_async(message):
 # Main entry
 async def main():
     try:
-        await pull_model("llama3.2")
+        await pull_model("tinyllama")
         logs = load_trivy_logs()
         if not logs:
             logging.error("No valid logs to process.")
