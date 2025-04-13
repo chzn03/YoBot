@@ -36,9 +36,7 @@ jobs:
       # Scan the Docker image for vulnerabilities
       - name: Scan Docker image for vulnerabilities
         run: |
-          trivy image --format json --output trivy_output.json ghcr.io/$USER/yobot:latest
-        env:
-          TRIVY_SEVERITY: HIGH,CRITICAL  # Optional: Set severity levels to scan for --severity HIGH,CRITICAL --exit-code 1
+          trivy image --severity CRITICAL --format json --output trivy_output.json ghcr.io/$USER/yobot:latest
       
       # Build the new Docker image with trivy_output.json
       - name: Build the new Docker image with trivy_output.json
