@@ -3,6 +3,7 @@ import json
 import asyncio
 import aiohttp
 import os
+import ollama  # Using the official Ollama package
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -20,16 +21,17 @@ if not DISCORD_WEBHOOK_URL:
 if not MODEL_HUMOR_PATH:
     raise ValueError("MODEL_HUMOR_PATH is missing in the .env file.")
 
-# Pull model from Ollama using aiohttp
-async def pull_model(model_name):
-    url = "http://ollama-service:11434/api/pull"
-    payload = {"model": model_name}
+# Configure Ollama client
+ollama_host = os.getenv('OLLAMA_HOST', 'http://ollama-service:11434')
+ollama_client = ollama.Client(host=ollama_host)
 
+# Pull model from Ollama using the ollama package
+async def pull_model(model_name):
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
-                response.raise_for_status()
-                logging.info(f"Model '{model_name}' pulled successfully.")
+        # Using the synchronous pull with asyncio.to_thread
+        response = await asyncio.to_thread(ollama_client.pull, model=model_name)
+        logging.info(f"Model '{model_name}' pulled successfully.")
+        logging.debug(f"Pull response: {response}")
     except Exception as e:
         logging.error(f"Error pulling model {model_name}: {e}")
         raise
@@ -80,7 +82,7 @@ def build_prompt_with_logs(logs):
             f"Your style is inspired by:\n"
             f"- Gordon Ramsay yelling at bugs\n"
             f"- A stand-up comedian doing infosec\n"
-            f"- A DevOps intern who’s had enough\n\n"
+            f"- A DevOps intern who's had enough\n\n"
             f"Now, here's a list of vulnerabilities. For each one, roast it, mock its severity like a drama queen, and end with a funny (but useful) recommendation.\n\n"
             f"{logs_as_text}\n\n"
             f"🎭 Keep it short, sharp, sassy, and never boring. Go full Sheldon Cooper if needed."
@@ -89,23 +91,18 @@ def build_prompt_with_logs(logs):
         logging.error(f"Error building prompt with humor path: {e}")
         return ""
 
-# Send prompt to Ollama
+# Send prompt to Ollama using the ollama package
 async def send_prompt_to_ollama(prompt, model="llama3.2", temperature=1.0):
-    url = "http://ollama-service:11434/api/generate"
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "temperature": temperature,
-        "stream": False
-    }
-
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
-                response.raise_for_status()
-                logging.info("Prompt sent to Ollama successfully.")
-                result = await response.json()
-                return result.get("response", "No funny response generated.")
+        # Using the synchronous generate with asyncio.to_thread
+        response = await asyncio.to_thread(
+            ollama_client.generate,
+            model=model,
+            prompt=prompt,
+            options={'temperature': temperature}
+        )
+        logging.info("Prompt sent to Ollama successfully.")
+        return response.get('response', "No funny response generated.")
     except Exception as e:
         logging.error(f"Ollama generate error: {e}")
         return "Oops, I tried to be funny, but I crashed harder than your CI pipeline."
@@ -121,7 +118,7 @@ def clean_discord_message(text, max_length=1900):
         logging.error(f"Error cleaning message: {e}")
         return ": Message could not be processed."
 
-# Send to Discord
+# Send to Discord (keeping aiohttp for Discord webhook)
 async def send_discord_message_async(message):
     try:
         payload = {"content": message}
