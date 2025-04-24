@@ -22,7 +22,7 @@ if not MODEL_HUMOR_PATH:
     raise ValueError("MODEL_HUMOR_PATH is missing in the .env file.")
 
 # Configure Ollama client
-ollama_host = os.getenv('OLLAMA_HOST', 'http://ollama-service:11434')
+ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
 ollama_client = ollama.Client(host=ollama_host)
 
 # Pull model from Ollama using the ollama package
